@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jusi-opencode"
+version = "0.1.0"
+description = "OpenCode display-handler plugin for Jusi"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+  { name = "notawhaleble" }
+]
+keywords = ["opencode", "jusi", "jupyter", "notebook", "plugin"]
+dependencies = [
+  "ipython>=8",
+  "jusi>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+release = ["build>=1.2", "twine>=5"]
+
+[project.entry-points."jusi.display_handlers"]
+opencode = "jusi_opencode.plugin:display_handler_specs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jusi_opencode"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
