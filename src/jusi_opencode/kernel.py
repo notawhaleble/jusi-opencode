@@ -27,6 +27,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", default="")
     parser.add_argument("--variant", default="")
     parser.add_argument("--agent", default="")
+    parser.add_argument("--approval-mode", default="")
     parser.add_argument("--auto", action="store_true")
     return parser
 
@@ -53,6 +54,7 @@ def load_ipython_extension(ipython: Any) -> None:
             "model": str(args.model or "").strip(),
             "variant": str(args.variant or "").strip(),
             "agent": str(args.agent or "").strip(),
+            "approval_mode": str(args.approval_mode or "").strip(),
             "auto": bool(args.auto),
         }
         payload = {"handler_id": "opencode", "magic_name": "opencode", "content": str(cell or ""), "meta": meta}

@@ -70,11 +70,22 @@ def test_build_orgcode_style_command_uses_stdin_and_output_format() -> None:
             output_format_arg="--output-format",
             output_format="stream-json",
             prompt_transport="stdin",
+            auto_arg="",
+            approval_arg="--approval-mode",
+            approval_mode="auto-edit",
         )
     )
 
     assert command[0].endswith("orgcode") or command[0] == "orgcode"
-    assert command[1:] == ["run", "--input-format", "text", "--output-format", "stream-json"]
+    assert command[1:] == [
+        "run",
+        "--input-format",
+        "text",
+        "--output-format",
+        "stream-json",
+        "--approval-mode",
+        "auto-edit",
+    ]
 
 
 def test_event_stream_writes_prompt_to_stdin_for_stdin_transport(monkeypatch) -> None:  # type: ignore[no-untyped-def]

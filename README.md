@@ -46,6 +46,9 @@ input_format = "text"
 output_format_arg = "--output-format"
 output_format = "stream-json"
 prompt_transport = "stdin"
+auto_arg = ""
+approval_arg = "--approval-mode"
+approval_mode = "auto-edit"
 model = "provider/model"
 ```
 

@@ -47,6 +47,9 @@ def run_opencode_runner() -> int:
         output_format_arg=target.output_format_arg,
         output_format=target.output_format,
         prompt_transport=target.prompt_transport,
+        auto_arg=target.auto_arg,
+        approval_arg=target.approval_arg,
+        approval_mode=str(meta.get("approval_mode", "")).strip() or target.approval_mode,
         current_model=str(meta.get("model", "")).strip() or target.model,
         variant=str(meta.get("variant", "")).strip() or target.variant,
         agent=str(meta.get("agent", "")).strip() or target.agent,
@@ -72,6 +75,9 @@ class OpenCodeRuntime:
     output_format_arg: str = "--format"
     output_format: str = "json"
     prompt_transport: str = "argv"
+    auto_arg: str = "--auto"
+    approval_arg: str = ""
+    approval_mode: str = ""
     current_model: str = ""
     variant: str = ""
     agent: str = ""
@@ -170,6 +176,9 @@ class OpenCodeRuntime:
         if command.name == "agent" and command.args:
             self.agent = command.args[0].strip()
             return None
+        if command.name in {"approval", "approval-mode"} and command.args:
+            self.approval_mode = command.args[0].strip()
+            return None
         if command.name == "auto":
             if command.args:
                 self.auto = command.args[0].strip().lower() in {"1", "true", "yes", "on"}
@@ -226,6 +235,10 @@ class OpenCodeRuntime:
             if command.args:
                 self.agent = command.args[0].strip()
             return {"handled": True, "command": "agent", "agent": self.agent}
+        if command.name in {"approval", "approval-mode"}:
+            if command.args:
+                self.approval_mode = command.args[0].strip()
+            return {"handled": True, "command": "approval-mode", "approval_mode": self.approval_mode}
         if command.name == "auto":
             if command.args:
                 self.auto = command.args[0].strip().lower() in {"1", "true", "yes", "on"}
@@ -280,6 +293,9 @@ class OpenCodeRuntime:
             output_format_arg=self.output_format_arg,
             output_format=self.output_format,
             prompt_transport=self.prompt_transport,
+            auto_arg=self.auto_arg,
+            approval_arg=self.approval_arg,
+            approval_mode=self.approval_mode,
             session=self.session_id,
             continue_last=(self.continue_last and not self.session_id),
             model=self.current_model,
@@ -327,6 +343,7 @@ class OpenCodeRuntime:
             "input_format": self.input_format,
             "output_format": self.output_format,
             "prompt_transport": self.prompt_transport,
+            "approval_mode": self.approval_mode,
             "event_count": len(events),
             "touched_files": [str(item["path"]) for item in file_records],
             "turn_dir": str(turn_dir),
@@ -531,6 +548,7 @@ class OpenCodeRuntime:
             {"key": "model", "value": _model_label(self.current_model, self.variant)},
             {"key": "session", "value": self.session_id or "(new)"},
             {"key": "agent", "value": self.agent},
+            {"key": "approval_mode", "value": self.approval_mode},
         ]
         vd.push(Sheet("opencode_meta", rows=rows, columns=[ColumnItem("key", width=18), ColumnItem("value", width=100)]))
 

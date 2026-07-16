@@ -45,6 +45,9 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
         output_format_arg="--output-format",
         output_format="stream-json",
         prompt_transport="stdin",
+        auto_arg="",
+        approval_arg="--approval-mode",
+        approval_mode="auto-edit",
         current_model="anthropic/claude-sonnet-4",
         variant="high",
         agent="build",
@@ -73,6 +76,9 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
     assert seen["options"].output_format_arg == "--output-format"
     assert seen["options"].output_format == "stream-json"
     assert seen["options"].prompt_transport == "stdin"
+    assert seen["options"].auto_arg == ""
+    assert seen["options"].approval_arg == "--approval-mode"
+    assert seen["options"].approval_mode == "auto-edit"
     assert seen["options"].variant == "high"
     assert seen["options"].agent == "build"
     assert seen["options"].auto is True
@@ -200,11 +206,17 @@ def test_runtime_option_slash_commands_update_future_turns(tmp_path: Path) -> No
     }
     assert runtime.handle_followup({"cell_text": "/variant high"}) == {"handled": True, "command": "variant", "variant": "high"}
     assert runtime.handle_followup({"cell_text": "/agent review"}) == {"handled": True, "command": "agent", "agent": "review"}
+    assert runtime.handle_followup({"cell_text": "/approval-mode auto-edit"}) == {
+        "handled": True,
+        "command": "approval-mode",
+        "approval_mode": "auto-edit",
+    }
     assert runtime.handle_followup({"cell_text": "/auto on"}) == {"handled": True, "command": "auto", "auto": True}
 
     assert runtime.current_model == "anthropic/claude-sonnet-4"
     assert runtime.variant == "high"
     assert runtime.agent == "review"
+    assert runtime.approval_mode == "auto-edit"
     assert runtime.auto is True
 
 

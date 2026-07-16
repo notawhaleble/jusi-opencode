@@ -20,6 +20,9 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
             "output_format_arg": "--output-format",
             "output_format": "stream-json",
             "prompt_transport": "stdin",
+            "auto_arg": "",
+            "approval_arg": "--approval-mode",
+            "approval_mode": "auto-edit",
             "model": "anthropic/claude-sonnet-4",
             "variant": "high",
             "auto": True,
@@ -33,6 +36,9 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
     assert target.output_format_arg == "--output-format"
     assert target.output_format == "stream-json"
     assert target.prompt_transport == "stdin"
+    assert target.auto_arg == ""
+    assert target.approval_arg == "--approval-mode"
+    assert target.approval_mode == "auto-edit"
     assert target.model == "anthropic/claude-sonnet-4"
     assert target.variant == "high"
     assert target.auto is True

@@ -22,6 +22,9 @@ class OpenCodeRunOptions:
     output_format_arg: str = "--format"
     output_format: str = "json"
     prompt_transport: str = "argv"
+    auto_arg: str = "--auto"
+    approval_arg: str = ""
+    approval_mode: str = ""
     session: str = ""
     continue_last: bool = False
     model: str = ""
@@ -46,8 +49,10 @@ def build_opencode_command(options: OpenCodeRunOptions) -> list[str]:
         command.extend(["--variant", options.variant])
     if options.agent:
         command.extend(["--agent", options.agent])
-    if options.auto:
-        command.append("--auto")
+    if options.approval_arg and options.approval_mode:
+        command.extend([options.approval_arg, options.approval_mode])
+    if options.auto and options.auto_arg:
+        command.append(options.auto_arg)
     if options.prompt_transport != "stdin":
         command.append(options.prompt)
     return command
