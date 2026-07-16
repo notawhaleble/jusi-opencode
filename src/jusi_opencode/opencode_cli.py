@@ -17,6 +17,11 @@ class OpenCodeRunOptions:
     cwd: Path
     prompt: str
     executable: str = "opencode"
+    input_format_arg: str = ""
+    input_format: str = ""
+    output_format_arg: str = "--format"
+    output_format: str = "json"
+    prompt_transport: str = "argv"
     session: str = ""
     continue_last: bool = False
     model: str = ""
@@ -26,7 +31,11 @@ class OpenCodeRunOptions:
 
 
 def build_opencode_command(options: OpenCodeRunOptions) -> list[str]:
-    command = [_normalize_executable(options.executable), "run", "--format", "json"]
+    command = [_normalize_executable(options.executable), "run"]
+    if options.input_format_arg and options.input_format:
+        command.extend([options.input_format_arg, options.input_format])
+    if options.output_format_arg and options.output_format:
+        command.extend([options.output_format_arg, options.output_format])
     if options.session:
         command.extend(["--session", options.session])
     elif options.continue_last:
@@ -39,7 +48,8 @@ def build_opencode_command(options: OpenCodeRunOptions) -> list[str]:
         command.extend(["--agent", options.agent])
     if options.auto:
         command.append("--auto")
-    command.append(options.prompt)
+    if options.prompt_transport != "stdin":
+        command.append(options.prompt)
     return command
 
 
@@ -74,6 +84,7 @@ class OpenCodeEventStream:
             build_opencode_command(self.options),
             cwd=str(self.options.cwd),
             env=opencode_child_env(),
+            stdin=subprocess.PIPE if self.options.prompt_transport == "stdin" else None,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -81,6 +92,15 @@ class OpenCodeEventStream:
             start_new_session=True,
         )
         self.process = process
+        if self.options.prompt_transport == "stdin":
+            assert process.stdin is not None
+            try:
+                process.stdin.write(self.options.prompt)
+                if not self.options.prompt.endswith("\n"):
+                    process.stdin.write("\n")
+                process.stdin.close()
+            except BrokenPipeError:
+                self.cancelled = True
         assert process.stdout is not None
         for line in process.stdout:
             stripped = line.strip()
@@ -143,7 +163,8 @@ def session_id_from_events(events: list[dict[str, object]]) -> str:
 
 
 def final_message_from_events(events: list[dict[str, object]]) -> str:
-    messages: list[str] = []
+    message_texts: list[str] = []
+    delta_texts: list[str] = []
     raw_lines: list[str] = []
     exit_code: int | None = None
     aborted = False
@@ -153,16 +174,21 @@ def final_message_from_events(events: list[dict[str, object]]) -> str:
             if raw:
                 raw_lines.append(raw)
         else:
-            text = _event_text(event)
+            text, is_delta = event_text(event)
             if text:
-                messages.append(text)
+                if is_delta:
+                    delta_texts.append(text)
+                else:
+                    message_texts.append(text)
         if event.get("type") == "process.exited":
             exit_code = _int_value(event.get("exit_code"))
         if event.get("type") == "process.aborted":
             aborted = True
             exit_code = _int_value(event.get("exit_code"))
-    if messages:
-        return messages[-1]
+    if message_texts:
+        return message_texts[-1]
+    if delta_texts:
+        return "".join(delta_texts).strip()
     if raw_lines:
         prefix = f"OpenCode exited with code {exit_code}: " if exit_code not in (None, 0) else ""
         return prefix + raw_lines[-1]
@@ -173,25 +199,59 @@ def final_message_from_events(events: list[dict[str, object]]) -> str:
     return ""
 
 
-def _event_text(event: dict[str, object]) -> str:
-    candidates = [event.get("text"), event.get("message"), event.get("content")]
+def event_text(event: dict[str, object]) -> tuple[str, bool]:
+    delta = _choice_delta_text(event)
+    if delta:
+        return delta, True
+    candidates = [event.get("text"), event.get("content")]
     error = event.get("error")
     if isinstance(error, dict):
         data = error.get("data")
         if isinstance(data, dict):
             candidates.append(data.get("message"))
         candidates.extend([error.get("message"), error.get("name")])
-    item = event.get("item")
-    if isinstance(item, dict):
-        candidates.extend([item.get("text"), item.get("message"), item.get("content")])
-    part = event.get("part")
-    if isinstance(part, dict):
-        candidates.extend([part.get("text"), part.get("content")])
-    for value in candidates:
-        text = str(value or "").strip()
+    for key in ("message", "item", "part", "delta", "data"):
+        nested = event.get(key)
+        text = _text_from_value(nested)
         if text:
-            return text
+            return text, False
+    for value in candidates:
+        text = _text_from_value(value).strip()
+        if text:
+            return text, False
+    return "", False
+
+
+def _text_from_value(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(_text_from_value(item) for item in value)
+    if isinstance(value, dict):
+        for key in ("text", "content", "message", "delta"):
+            text = _text_from_value(value.get(key))
+            if text:
+                return text
+        choices = value.get("choices")
+        if isinstance(choices, list):
+            return "".join(_text_from_value(choice) for choice in choices)
     return ""
+
+
+def _choice_delta_text(event: dict[str, object]) -> str:
+    choices = event.get("choices")
+    if not isinstance(choices, list):
+        return ""
+    fragments: list[str] = []
+    for choice in choices:
+        if not isinstance(choice, dict):
+            continue
+        delta = choice.get("delta")
+        if isinstance(delta, dict):
+            text = _text_from_value(delta.get("content"))
+            if text:
+                fragments.append(text)
+    return "".join(fragments)
 
 
 def _int_value(value: object) -> int | None:

@@ -15,6 +15,11 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
         {
             "path": str(project),
             "executable": "myorgcode",
+            "input_format_arg": "--input-format",
+            "input_format": "text",
+            "output_format_arg": "--output-format",
+            "output_format": "stream-json",
+            "prompt_transport": "stdin",
             "model": "anthropic/claude-sonnet-4",
             "variant": "high",
             "auto": True,
@@ -23,6 +28,11 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
 
     assert target.path == project.resolve()
     assert target.executable == "myorgcode"
+    assert target.input_format_arg == "--input-format"
+    assert target.input_format == "text"
+    assert target.output_format_arg == "--output-format"
+    assert target.output_format == "stream-json"
+    assert target.prompt_transport == "stdin"
     assert target.model == "anthropic/claude-sonnet-4"
     assert target.variant == "high"
     assert target.auto is True

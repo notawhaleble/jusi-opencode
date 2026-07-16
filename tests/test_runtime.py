@@ -40,6 +40,11 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
         target_name="demo",
         target_path=repo,
         executable="myorgcode",
+        input_format_arg="--input-format",
+        input_format="text",
+        output_format_arg="--output-format",
+        output_format="stream-json",
+        prompt_transport="stdin",
         current_model="anthropic/claude-sonnet-4",
         variant="high",
         agent="build",
@@ -63,6 +68,11 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
     assert response["status"] == "done"
     assert seen["options"].model == "anthropic/claude-sonnet-4"
     assert seen["options"].executable == "myorgcode"
+    assert seen["options"].input_format_arg == "--input-format"
+    assert seen["options"].input_format == "text"
+    assert seen["options"].output_format_arg == "--output-format"
+    assert seen["options"].output_format == "stream-json"
+    assert seen["options"].prompt_transport == "stdin"
     assert seen["options"].variant == "high"
     assert seen["options"].agent == "build"
     assert seen["options"].auto is True

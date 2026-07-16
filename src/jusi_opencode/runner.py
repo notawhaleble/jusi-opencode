@@ -11,7 +11,7 @@ from jusi.visidata_support import append_plugin_frontend_action
 from jusi_opencode.commands import parse_slash_command
 from jusi_opencode.config import resolve_target
 from jusi_opencode.git_artifacts import FileState, capture_worktree_file_states, read_git_diff, read_git_snapshot, read_worktree_file_state
-from jusi_opencode.opencode_cli import OpenCodeEventStream, OpenCodeRunOptions, final_message_from_events, session_id_from_events
+from jusi_opencode.opencode_cli import OpenCodeEventStream, OpenCodeRunOptions, event_text, final_message_from_events, session_id_from_events
 from jusi_opencode.payload import OPENCODE_BOOTSTRAP_COMMAND, strip_opencode_header
 from jusi_opencode.sheet import bind_opencode_runtime, cancel_pending_opencode_turns, install_opencode_base_sheet_api, queue_opencode_turn, queue_visidata_action, wake_visidata
 from jusi_opencode.state import ProjectState, append_jsonl, ensure_project_state, next_turn_dir, project_state, read_jsonl, read_text, write_json, write_text
@@ -42,6 +42,11 @@ def run_opencode_runner() -> int:
         target_name=target.name,
         target_path=target.path,
         executable=str(meta.get("executable", "")).strip() or target.executable,
+        input_format_arg=target.input_format_arg,
+        input_format=target.input_format,
+        output_format_arg=target.output_format_arg,
+        output_format=target.output_format,
+        prompt_transport=target.prompt_transport,
         current_model=str(meta.get("model", "")).strip() or target.model,
         variant=str(meta.get("variant", "")).strip() or target.variant,
         agent=str(meta.get("agent", "")).strip() or target.agent,
@@ -62,6 +67,11 @@ class OpenCodeRuntime:
     target_name: str
     target_path: Path
     executable: str = "opencode"
+    input_format_arg: str = ""
+    input_format: str = ""
+    output_format_arg: str = "--format"
+    output_format: str = "json"
+    prompt_transport: str = "argv"
     current_model: str = ""
     variant: str = ""
     agent: str = ""
@@ -265,6 +275,11 @@ class OpenCodeRuntime:
             cwd=self.target_path,
             prompt=prompt,
             executable=self.executable,
+            input_format_arg=self.input_format_arg,
+            input_format=self.input_format,
+            output_format_arg=self.output_format_arg,
+            output_format=self.output_format,
+            prompt_transport=self.prompt_transport,
             session=self.session_id,
             continue_last=(self.continue_last and not self.session_id),
             model=self.current_model,
@@ -309,6 +324,9 @@ class OpenCodeRuntime:
             "model": self.current_model,
             "variant": self.variant,
             "executable": self.executable,
+            "input_format": self.input_format,
+            "output_format": self.output_format,
+            "prompt_transport": self.prompt_transport,
             "event_count": len(events),
             "touched_files": [str(item["path"]) for item in file_records],
             "turn_dir": str(turn_dir),
@@ -566,41 +584,10 @@ def _event_row(event: dict[str, object], index: int) -> dict[str, object]:
     return {
         "n": index,
         "type": str(event.get("type", "")),
-        "text": _event_text(event),
+        "text": event_text(event)[0],
         "session_id": session_id_from_events([event]),
         "exit_code": str(event.get("exit_code", "")),
     }
-
-
-def _event_text(event: dict[str, object]) -> str:
-    for key in ("text", "message", "content"):
-        text = str(event.get(key, "")).strip()
-        if text:
-            return text
-    error = event.get("error")
-    if isinstance(error, dict):
-        data = error.get("data")
-        if isinstance(data, dict):
-            text = str(data.get("message", "")).strip()
-            if text:
-                return text
-        for key in ("message", "name"):
-            text = str(error.get(key, "")).strip()
-            if text:
-                return text
-    item = event.get("item")
-    if isinstance(item, dict):
-        for key in ("text", "message", "content"):
-            text = str(item.get(key, "")).strip()
-            if text:
-                return text
-    part = event.get("part")
-    if isinstance(part, dict):
-        for key in ("text", "content"):
-            text = str(part.get(key, "")).strip()
-            if text:
-                return text
-    return ""
 
 
 def _persist_turn_file_artifacts(turn_dir: Path, cwd: Path, before, after, before_file_states: dict[str, FileState]) -> list[dict[str, object]]:  # type: ignore[no-untyped-def]

@@ -34,6 +34,21 @@ agent = "build"
 auto = false
 ```
 
+For an API-compatible fork that uses stdin plus explicit input/output format
+flags:
+
+```toml
+[opencode.my_org_app]
+path = "/path/to/my-app"
+executable = "orgcode"
+input_format_arg = "--input-format"
+input_format = "text"
+output_format_arg = "--output-format"
+output_format = "stream-json"
+prompt_transport = "stdin"
+model = "provider/model"
+```
+
 Run a cell:
 
 ```python
@@ -72,6 +87,13 @@ noninteractive API:
 
 ```bash
 EXECUTABLE run --format json ...
+```
+
+Targets can override the format flags when a fork uses a different compatible
+CLI shape, for example:
+
+```bash
+EXECUTABLE run --input-format text --output-format stream-json
 ```
 
 ## State

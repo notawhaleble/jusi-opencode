@@ -11,6 +11,11 @@ class OpenCodeTarget:
     name: str
     path: Path
     executable: str = "opencode"
+    input_format_arg: str = ""
+    input_format: str = ""
+    output_format_arg: str = "--format"
+    output_format: str = "json"
+    prompt_transport: str = "argv"
     model: str = ""
     variant: str = ""
     agent: str = ""
@@ -35,6 +40,11 @@ def resolve_target(name: str, target_config: Mapping[str, Any] | None = None) ->
             name=name,
             path=target_path,
             executable=str(raw_config.get("executable", "opencode")).strip() or "opencode",
+            input_format_arg=str(raw_config.get("input_format_arg", "")).strip(),
+            input_format=str(raw_config.get("input_format", "")).strip(),
+            output_format_arg=str(raw_config.get("output_format_arg", "--format")).strip(),
+            output_format=str(raw_config.get("output_format", "json")).strip(),
+            prompt_transport=_prompt_transport(raw_config.get("prompt_transport", "argv")),
             model=str(raw_config.get("model", "")).strip(),
             variant=str(raw_config.get("variant", "")).strip(),
             agent=str(raw_config.get("agent", "")).strip(),
@@ -66,3 +76,8 @@ def _bool_value(value: object) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes", "on"}
     return bool(value)
+
+
+def _prompt_transport(value: object) -> str:
+    normalized = str(value or "argv").strip().lower()
+    return normalized if normalized in {"argv", "stdin"} else "argv"
