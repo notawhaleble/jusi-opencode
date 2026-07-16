@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 from unittest.mock import patch
 
 from jusi.visidata_support import install_visidata_runtime_hooks
@@ -88,6 +89,45 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
     assert (state.session_dir("ses_1") / "turn-0001" / "prompt.md").read_text(encoding="utf-8") == "do work"
     assert (state.session_dir("ses_1") / "turn-0001" / "final.md").read_text(encoding="utf-8") == "done"
     assert (state.session_dir("ses_1") / "turn-0001" / "opencode-events.jsonl").read_text(encoding="utf-8").count("\n") == 2
+
+
+def test_turn_artifacts_preserve_head_before_for_clean_tracked_edits(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True)
+    tracked = repo / "tracked.txt"
+    tracked.write_text("before\n", encoding="utf-8")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    state = project_state(repo, state_home=tmp_path / "state")
+    runtime = OpenCodeRuntime(state=state, target_name="demo", target_path=repo)
+    runtime.open_live_events_sheet = lambda: None  # type: ignore[method-assign]
+    runtime.queue_focus_turns_sheet = lambda: None  # type: ignore[method-assign]
+
+    def fake_iter(_options):  # type: ignore[no-untyped-def]
+        tracked.write_text("after\n", encoding="utf-8")
+        (repo / "new.txt").write_text("new\n", encoding="utf-8")
+        yield {"type": "session.updated", "sessionID": "ses_1"}
+
+    with patch("jusi_opencode.runner.OpenCodeEventStream", lambda options: FakeOpenCodeEventStream(options, fake_iter)), patch(
+        "jusi.visidata_support.set_plugin_execution_status"
+    ):
+        response = runtime.run_opencode_turn("change files")
+
+    assert response["touched_files"] == ["new.txt", "tracked.txt"]
+    row = runtime.load_persisted_turn_rows()[0]
+    files_sheet = runtime.make_touched_files_sheet(row)
+    rows_by_path = {item["path"]: item for item in files_sheet.rows}
+    tracked_row = rows_by_path["tracked.txt"]
+    assert tracked_row["status"] == "modified"
+    assert tracked_row["before_exists"] is True
+    assert Path(str(tracked_row["before_path"])).read_text(encoding="utf-8") == "before\n"
+    assert Path(str(tracked_row["after_path"])).read_text(encoding="utf-8") == "after\n"
+    new_row = rows_by_path["new.txt"]
+    assert new_row["status"] == "added"
+    assert new_row["before_exists"] is False
 
 
 def test_interrupt_aborts_active_opencode_turn(tmp_path: Path) -> None:

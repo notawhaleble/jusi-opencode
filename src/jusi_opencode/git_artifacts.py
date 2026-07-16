@@ -66,6 +66,19 @@ def read_worktree_file_state(cwd: Path, path: str) -> FileState:
         return FileState(False)
 
 
+def read_git_head_file_state(cwd: Path, path: str) -> FileState:
+    result = subprocess.run(
+        ["git", "show", f"HEAD:{path}"],
+        cwd=str(cwd),
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if result.returncode != 0:
+        return FileState(False)
+    return FileState(True, result.stdout)
+
+
 def _git_text(cwd: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=str(cwd), check=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, encoding="utf-8")
     return result.stdout if result.returncode == 0 else ""

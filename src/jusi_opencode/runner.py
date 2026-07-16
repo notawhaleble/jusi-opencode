@@ -10,7 +10,7 @@ from uuid import uuid4
 from jusi.visidata_support import append_plugin_frontend_action
 from jusi_opencode.commands import parse_slash_command
 from jusi_opencode.config import resolve_target
-from jusi_opencode.git_artifacts import FileState, capture_worktree_file_states, read_git_diff, read_git_snapshot, read_worktree_file_state
+from jusi_opencode.git_artifacts import FileState, capture_worktree_file_states, read_git_diff, read_git_head_file_state, read_git_snapshot, read_worktree_file_state
 from jusi_opencode.opencode_cli import OpenCodeEventStream, OpenCodeRunOptions, event_text, final_message_from_events, session_id_from_events
 from jusi_opencode.payload import OPENCODE_BOOTSTRAP_COMMAND, strip_opencode_header
 from jusi_opencode.sheet import bind_opencode_runtime, cancel_pending_opencode_turns, install_opencode_base_sheet_api, queue_opencode_turn, queue_visidata_action, wake_visidata
@@ -613,7 +613,9 @@ def _persist_turn_file_artifacts(turn_dir: Path, cwd: Path, before, after, befor
     records: list[dict[str, object]] = []
     files_dir = turn_dir / "files"
     for path in paths:
-        before_state = before_file_states.get(path, FileState(False))
+        before_state = before_file_states.get(path)
+        if before_state is None:
+            before_state = read_git_head_file_state(cwd, path)
         after_state = read_worktree_file_state(cwd, path)
         if before_state.exists == after_state.exists and before_state.content == after_state.content:
             continue
