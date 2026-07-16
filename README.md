@@ -49,6 +49,7 @@ prompt_transport = "stdin"
 auto_arg = ""
 approval_arg = "--approval-mode"
 approval_mode = "auto-edit"
+session_arg = "--session-id"
 model = "provider/model"
 ```
 

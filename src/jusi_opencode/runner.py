@@ -50,6 +50,7 @@ def run_opencode_runner() -> int:
         auto_arg=target.auto_arg,
         approval_arg=target.approval_arg,
         approval_mode=str(meta.get("approval_mode", "")).strip() or target.approval_mode,
+        session_arg=target.session_arg,
         current_model=str(meta.get("model", "")).strip() or target.model,
         variant=str(meta.get("variant", "")).strip() or target.variant,
         agent=str(meta.get("agent", "")).strip() or target.agent,
@@ -78,6 +79,7 @@ class OpenCodeRuntime:
     auto_arg: str = "--auto"
     approval_arg: str = ""
     approval_mode: str = ""
+    session_arg: str = "--session"
     current_model: str = ""
     variant: str = ""
     agent: str = ""
@@ -296,6 +298,7 @@ class OpenCodeRuntime:
             auto_arg=self.auto_arg,
             approval_arg=self.approval_arg,
             approval_mode=self.approval_mode,
+            session_arg=self.session_arg,
             session=self.session_id,
             continue_last=(self.continue_last and not self.session_id),
             model=self.current_model,

@@ -23,6 +23,7 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
             "auto_arg": "",
             "approval_arg": "--approval-mode",
             "approval_mode": "auto-edit",
+            "session_arg": "--session-id",
             "model": "anthropic/claude-sonnet-4",
             "variant": "high",
             "auto": True,
@@ -39,6 +40,7 @@ def test_resolve_target_uses_core_provided_config(tmp_path: Path) -> None:
     assert target.auto_arg == ""
     assert target.approval_arg == "--approval-mode"
     assert target.approval_mode == "auto-edit"
+    assert target.session_arg == "--session-id"
     assert target.model == "anthropic/claude-sonnet-4"
     assert target.variant == "high"
     assert target.auto is True

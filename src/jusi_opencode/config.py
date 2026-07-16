@@ -19,6 +19,7 @@ class OpenCodeTarget:
     auto_arg: str = "--auto"
     approval_arg: str = ""
     approval_mode: str = ""
+    session_arg: str = "--session"
     model: str = ""
     variant: str = ""
     agent: str = ""
@@ -51,6 +52,7 @@ def resolve_target(name: str, target_config: Mapping[str, Any] | None = None) ->
             auto_arg=str(raw_config.get("auto_arg", "--auto")).strip(),
             approval_arg=str(raw_config.get("approval_arg", "")).strip(),
             approval_mode=str(raw_config.get("approval_mode", "")).strip(),
+            session_arg=str(raw_config.get("session_arg", "--session")).strip(),
             model=str(raw_config.get("model", "")).strip(),
             variant=str(raw_config.get("variant", "")).strip(),
             agent=str(raw_config.get("agent", "")).strip(),

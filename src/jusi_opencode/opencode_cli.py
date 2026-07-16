@@ -25,6 +25,7 @@ class OpenCodeRunOptions:
     auto_arg: str = "--auto"
     approval_arg: str = ""
     approval_mode: str = ""
+    session_arg: str = "--session"
     session: str = ""
     continue_last: bool = False
     model: str = ""
@@ -40,7 +41,8 @@ def build_opencode_command(options: OpenCodeRunOptions) -> list[str]:
     if options.output_format_arg and options.output_format:
         command.extend([options.output_format_arg, options.output_format])
     if options.session:
-        command.extend(["--session", options.session])
+        if options.session_arg:
+            command.extend([options.session_arg, options.session])
     elif options.continue_last:
         command.append("--continue")
     if options.model:

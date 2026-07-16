@@ -49,6 +49,7 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
         auto_arg="",
         approval_arg="--approval-mode",
         approval_mode="auto-edit",
+        session_arg="--session-id",
         current_model="anthropic/claude-sonnet-4",
         variant="high",
         agent="build",
@@ -80,6 +81,7 @@ def test_normal_followup_runs_opencode_with_current_options(tmp_path: Path) -> N
     assert seen["options"].auto_arg == ""
     assert seen["options"].approval_arg == "--approval-mode"
     assert seen["options"].approval_mode == "auto-edit"
+    assert seen["options"].session_arg == "--session-id"
     assert seen["options"].variant == "high"
     assert seen["options"].agent == "build"
     assert seen["options"].auto is True

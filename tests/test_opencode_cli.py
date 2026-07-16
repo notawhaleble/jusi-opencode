@@ -73,6 +73,8 @@ def test_build_orgcode_style_command_uses_stdin_and_output_format() -> None:
             auto_arg="",
             approval_arg="--approval-mode",
             approval_mode="auto-edit",
+            session_arg="--session-id",
+            session="ses_1",
         )
     )
 
@@ -83,6 +85,8 @@ def test_build_orgcode_style_command_uses_stdin_and_output_format() -> None:
         "text",
         "--output-format",
         "stream-json",
+        "--session-id",
+        "ses_1",
         "--approval-mode",
         "auto-edit",
     ]
